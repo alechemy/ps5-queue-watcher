@@ -3,7 +3,8 @@ const { app, BrowserWindow, session } = require('electron');
 const fetch = require('electron-fetch').default;
 const sleep = require('./lib/sleep');
 const notify = require('./lib/notify');
-const mail = require('./lib/mail');
+const { mail } = require('./lib/mail');
+const sms = require('./lib/sms');
 const cons = require('./constants');
 const config = require('./config.json');
 const logger = require('pino')({ level: config.logLevel, prettyPrint: config.prettyPrint });
@@ -101,25 +102,36 @@ async function queue() {
 	let err;
 	while (true) {
 		err = await checkStatus(queueID);
+		let title;
+		let message;
 		switch (err.status) {
 		case cons.errors.OK:
 			break;
 		case cons.errors.CAPTCHA:
 			logger.info("need to do captcha!");
-			notify("Captcha required", "Go do the captcha!");
-			mail("Captcha required", "Go do the captcha!");
+			title = "Captcha required";
+			message = "Go do the captcha!";
+			notify(title, message);
+			mail(title, message);
+			sms(title, message);
 			await doCaptcha(err.redir);
 			logger.info("captcha window closed");
 			break;
 		case cons.errors.MESSAGE:
 			logger.info("message found!");
-			notify("Queue message found!", "Go to the site!")
-			mail("Queue message found!", "Go to the site!")
+			title = "Queue message found!";
+			message = "Go to the site!";
+			notify(title, message);
+			mail(title, message);
+			sms(title, message);
 			break;
 		case cons.errors.QUEUE:
 			logger.info("updated queue info found!");
-			notify("Queue info changed!", "Go to the site!");
-			mail("Queue info changed!", "Go to the site!");
+			title = "Queue info changed!";
+			message = "Go to the site!";
+			notify(title, message);
+			mail(title, message);
+			sms(title, message);
 			break;
 		default:
 			logger.info("encountered error, restarting session");
