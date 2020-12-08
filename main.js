@@ -13,51 +13,53 @@ let ses;
 
 async function generateID() {
 	// calculate scaling values
-	let timestamp = new Date().getTime();
-	let requestLength = cons.baseRespEnd - cons.baseReqStart;
-	let latency = cons.baseRespStart - cons.baseReqStart;
-	let processTime = cons.baseRespEnd - cons.baseRespStart;
+	const timestamp = new Date().getTime();
+	const requestLength = cons.baseRespEnd - cons.baseReqStart;
+	const latency = cons.baseRespStart - cons.baseReqStart;
+	const processTime = cons.baseRespEnd - cons.baseRespStart;
 	
 	// generate simulated timestamp info
-	let idBody = [{
+	const idBody = [{
 		...cons.idBodyTemp[0], 
 		requestStart: (timestamp - requestLength), 
 		responseStart: (timestamp - requestLength) + latency,
 		responseEnd: ((timestamp - requestLength) + latency) + processTime
 	}]
 	
-	let res = await fetch(cons.idURL, {
-		method: "post",
-		body:	JSON.stringify(idBody),
-		session: ses,
-		useSessionCookies: true,
-	});
-	
-	if (res.ok) return res.headers.get(cons.queueIDHdr);
-	else return 0;
+	try {
+		const res = await fetch(cons.idURL, {
+			method: "post",
+			body:	JSON.stringify(idBody),
+			session: ses,
+			useSessionCookies: true,
+		});
+
+		return res.headers.get(cons.queueIDHdr);
+	} catch (e) {
+		return e;
+	}
 }
 
 async function checkStatus(queueID) {
-	let statusURL = cons.baseStatusURL.replace(cons.baseID, queueID);
-	let res = await fetch(statusURL, {
-		method: "post",
-		body:	JSON.stringify(cons.statusBody),
-		headers: { 'Content-Type': 'application/json' },
-		session: ses,
-		useSessionCookies: true,
-	});
-
-	if (!res.ok) return await res.text();
+	const statusURL = cons.baseStatusURL.replace(cons.baseID, queueID);
 	try {
-		let json = await res.json();
-		let redir = json.redirectUrl;
-		let msg = json.message;
-		let ticket = json.ticket;
+		const res = await fetch(statusURL, {
+			method: "post",
+			body:	JSON.stringify(cons.statusBody),
+			headers: { 'Content-Type': 'application/json' },
+			session: ses,
+			useSessionCookies: true,
+		});
+	
+		const json = await res.json();
+		const redir = json.redirectUrl;
+		const msg = json.message;
+		const ticket = json.ticket;
 		
 		if (redir) return {status: cons.errors.CAPTCHA, redir: redir};
 		if (msg) {
 			logger.trace(msg);
-			let text = msg.text.toLowerCase();
+			const text = msg.text.toLowerCase();
 			if (!text.includes(cons.oosMsg)) return {status: cons.errors.MESSAGE, msg: text};
 		}
 		if (ticket) {
