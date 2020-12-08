@@ -1,7 +1,9 @@
+require('dotenv').config()
 const { app, BrowserWindow, session } = require('electron');
 const fetch = require('electron-fetch').default;
 const sleep = require('./lib/sleep');
 const notify = require('./lib/notify');
+const mail = require('./lib/mail');
 const cons = require('./constants');
 const config = require('./config.json');
 const logger = require('pino')({ level: config.logLevel, prettyPrint: config.prettyPrint });
@@ -105,16 +107,19 @@ async function queue() {
 		case cons.errors.CAPTCHA:
 			logger.info("need to do captcha!");
 			notify("Captcha required", "Go do the captcha!");
+			mail("Captcha required", "Go do the captcha!");
 			await doCaptcha(err.redir);
 			logger.info("captcha window closed");
 			break;
 		case cons.errors.MESSAGE:
 			logger.info("message found!");
 			notify("Queue message found!", "Go to the site!")
+			mail("Queue message found!", "Go to the site!")
 			break;
 		case cons.errors.QUEUE:
 			logger.info("updated queue info found!");
 			notify("Queue info changed!", "Go to the site!");
+			mail("Queue info changed!", "Go to the site!");
 			break;
 		default:
 			logger.info("encountered error, restarting session");
@@ -135,7 +140,7 @@ async function queue() {
 }
 
 app.on('window-all-closed', () => {
-  //logger.debug("dont stop");
+	//logger.debug("dont stop");
 })
 
 app.whenReady().then(queue).then(app.quit);
